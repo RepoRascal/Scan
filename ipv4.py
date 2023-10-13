@@ -19,7 +19,6 @@ with open('.github_token', 'r') as file:
 THREAD_COUNT = 3000
 CHUNK_SIZE_MB = 100
 
-
 def scan_subnet(subnet, resolver):
     result_filename = f"{subnet.replace('/', '-')}_result.txt"
     
@@ -43,20 +42,17 @@ def scan_subnet(subnet, resolver):
         os.remove(result_filename)
         result_filename += '.gz'
 
-    # Push to GitHub
     commit_message = f"Add results for {subnet}"
     authenticated_url = f"https://[TOKEN_HIDDEN]:{GITHUB_TOKEN}@github.com/RepoRascal/Scan.git"
     github_cmd = f"""
-    git pull {authenticated_url} &&
     git add {result_filename} &&
     git commit -m "{commit_message}" &&
-    git push {authenticated_url}
+    git push {authenticated_url} --force
     """
     subprocess.run(github_cmd, shell=True)
     
     # Remove local files to save space
     os.remove(result_filename)
-
 
 
 def main():
