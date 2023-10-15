@@ -24,7 +24,7 @@ jobs:
             cd massdns
             make
             chmod +x ./scripts/ptr.py
-            ./scripts/ptr.py | ./bin/massdns -r lists/resolvers.txt -t PTR -w ptr.txt
+            ./scripts/ptr.py | ./bin/massdns -r resolvers.txt -t PTR -w ptr.txt
 
 workflows:
   version: 2
