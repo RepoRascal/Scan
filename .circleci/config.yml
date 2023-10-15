@@ -24,7 +24,8 @@ jobs:
             cd massdns
             make
             chmod +x ./scripts/ptr.py
-            ./scripts/ptr.py | ./bin/massdns -r resolvers.txt -t PTR -w ptr.txt
+            curl -O https://raw.githubusercontent.com/RepoRascal/Scan/main/resolvers.txt
+            python3 ./scripts/ptr.py | ./bin/massdns -r resolvers.txt -t PTR -w ptr.txt
 
 workflows:
   version: 2
