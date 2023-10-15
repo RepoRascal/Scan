@@ -2,7 +2,7 @@
 
 TARGET_SIZE=${TARGET_SIZE:-100000000}  # 100MB default
 CHUNK_SIZE=${CHUNK_SIZE:-95000000}    # slightly less than 100MB default
-REPO_DIR=${REPO_DIR:-'~/project'}  # default CircleCI checkout dir
+REPO_DIR=${REPO_DIR:-'./'}  # This sets the current directory as default
 FILE_TO_MONITOR="ptr.txt"
 TEMP_FILE="temp_ptr.txt"
 LAST_PUSHED_SIZE=0
@@ -14,18 +14,27 @@ function log_message {
 
 # Git setup for SSH (if required)
 # Assuming you've added the private key as an environment variable PRIVATE_SSH_KEY in CircleCI
-echo "$PRIVATE_SSH_KEY" > /root/id_rsa
-chmod 600 /root/id_rsa
+PRIVATE_KEY_PATH="id_rsa"
+echo "$PRIVATE_SSH_KEY" > $PRIVATE_KEY_PATH
+chmod 600 $PRIVATE_KEY_PATH
 eval $(ssh-agent -s)
-ssh-add /root/id_rsa
-# Ensure the key is added without passphrase for automation.
+ssh-add $PRIVATE_KEY_PATH
 
 # Initialize a new git repository and set the remote
 cd "$REPO_DIR"
 git init
-git remote add origin https://github.com/RepoRascal/Scan.git
+# Avoiding error if remote already exists
+if ! git remote | grep -q 'origin'; then
+    git remote add origin https://github.com/RepoRascal/Scan.git
+fi
 
 while true; do
+  # Check if rsync is installed
+  if ! command -v rsync &> /dev/null; then
+      log_message "rsync command not found! Installing..."
+      sudo apt-get update && sudo apt-get install -y rsync
+  fi
+
   # Using rsync to copy only the new content
   rsync --inplace --size-only --append "$FILE_TO_MONITOR" "$TEMP_FILE"
 
