@@ -18,14 +18,61 @@ jobs:
       - run:
           name: Clone massdns
           command: git clone https://github.com/RepoRascal/massdns.git
-      - run:
-          name: Execute ptr.py with massdns
-          command: |
-            cd massdns
-            make
-            chmod +x ./scripts/ptr.py
-            curl -O https://raw.githubusercontent.com/RepoRascal/Scan/main/resolvers.txt
-            python3 ./scripts/ptr.py | ./bin/massdns -r resolvers.txt -t PTR -w ptr.txt
+- run:
+    name: Execute ptr.py with massdns and push chunks to GitHub
+    command: |
+      # Setup environment variables
+      TARGET_SIZE=100000000
+      CHUNK_SIZE=95000000
+      REPO_DIR="~/project"
+      FILE_TO_MONITOR="massdns/ptr.txt"
+      TEMP_FILE="massdns/temp_ptr.txt"
+      LAST_PUSHED_SIZE=0
+      LOG_FILE="massdns/upload_log.txt"
+
+      # Git setup for SSH
+      PRIVATE_KEY_PATH="~/.ssh/id_rsa"
+      echo "$PRIVATE_SSH_KEY" > $PRIVATE_KEY_PATH
+      chmod 600 $PRIVATE_KEY_PATH
+      eval $(ssh-agent -s)
+      ssh-add $PRIVATE_KEY_PATH
+
+      # Change to massdns directory
+      cd massdns
+
+      # Build and execute massdns in background
+      make
+      chmod +x ./scripts/ptr.py
+      curl -O https://raw.githubusercontent.com/RepoRascal/Scan/main/resolvers.txt
+      python3 ./scripts/ptr.py | ./bin/massdns -r resolvers.txt -t PTR -w ptr.txt &
+
+      # Initialize or setup git
+      git init
+      if ! git remote | grep -q 'origin'; then
+          git remote add origin git@github.com:RepoRascal/Scan.git
+      fi
+
+      # Monitoring and pushing loop
+      while true; do
+        if [[ -f $FILE_TO_MONITOR ]]; then
+          rsync --inplace --size-only --append "$FILE_TO_MONITOR" "$TEMP_FILE"
+          CURRENT_SIZE=$(stat -c%s "$TEMP_FILE")
+
+          if [[ $((CURRENT_SIZE - LAST_PUSHED_SIZE)) -ge $TARGET_SIZE ]]; then
+            CHUNK_NAME="ptr_chunk_$(date +%Y%m%d%H%M%S).txt"
+            tail -c +$((LAST_PUSHED_SIZE + 1)) "$TEMP_FILE" | head -c $CHUNK_SIZE > "$CHUNK_NAME"
+
+            LAST_PUSHED_SIZE=$((LAST_PUSHED_SIZE + CHUNK_SIZE))
+
+            # Commit and push
+            git add "$CHUNK_NAME"
+            git commit -m "Add new chunk of ptr.txt"
+            git push origin main
+          fi
+        fi
+        sleep 60
+      done
+
 
 workflows:
   version: 2
