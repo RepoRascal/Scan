@@ -8,7 +8,7 @@ jobs:
       - checkout
       - run:
           name: Execute upload.py Script
-          command: python3 upload.py
+          command: python3 upload.sh
 
   run_script2_and_massdns:
     docker:
