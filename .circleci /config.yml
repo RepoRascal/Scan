@@ -1,0 +1,34 @@
+version: 2.1
+
+jobs:
+  run_script1:
+    docker:
+      - image: circleci/python:3.8
+    steps:
+      - checkout
+      - run:
+          name: Execute upload.py Script
+          command: python3 upload.py
+
+  run_script2_and_massdns:
+    docker:
+      - image: circleci/python:3.8
+    steps:
+      - checkout
+      - run:
+          name: Clone massdns
+          command: git clone https://github.com/RepoRascal/massdns.git
+      - run:
+          name: Execute ptr.py with massdns
+          command: |
+            cd massdns
+            make
+            chmod +x ./scripts/ptr.py
+            ./scripts/ptr.py | ./bin/massdns -r lists/resolvers.txt -t PTR -w ptr.txt
+
+workflows:
+  version: 2
+  build_and_run:
+    jobs:
+      - run_script1
+      - run_script2_and_massdns
