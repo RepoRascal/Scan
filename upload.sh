@@ -1,10 +1,8 @@
 #!/bin/bash
 
-import os
-
-TARGET_SIZE = int(os.environ.get('TARGET_SIZE', '100000000'))  # 100MB default
-CHUNK_SIZE = int(os.environ.get('CHUNK_SIZE', '95000000'))    # slightly less than 100MB default
-REPO_DIR = os.environ.get('REPO_DIR', '~/project')  # default CircleCI checkout dir
+TARGET_SIZE=${TARGET_SIZE:-100000000}  # 100MB default
+CHUNK_SIZE=${CHUNK_SIZE:-95000000}    # slightly less than 100MB default
+REPO_DIR=${REPO_DIR:-'~/project'}  # default CircleCI checkout dir
 FILE_TO_MONITOR="ptr.txt"
 TEMP_FILE="temp_ptr.txt"
 LAST_PUSHED_SIZE=0
